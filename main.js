@@ -23,7 +23,7 @@ function preload() {
     // Load images
     this.load.image('arafath', 'assets/arafath.jpg');
     this.load.image('atika_and_saddam', 'assets/atika_nd_saddam.jpg');
-    this.load.image('hasina', 'assets/hasina.jpg');
+    this.load.image('Hasina', 'assets/Hasina.jpg');
     this.load.image('kawa_akder', 'assets/kawa akder.jpg');
     this.load.image('manik', 'assets/manik.jpg');
     this.load.image('Nowfel', 'assets/Nowfel.jpg');
