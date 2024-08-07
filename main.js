@@ -19,30 +19,29 @@ const config = {
 const game = new Phaser.Game(config);
 
 function preload() {
-    this.load.image('arafath', 'assets/arafath.jpg');
+    // Load images
+    this.load.image('sandal', 'assets/sandal.jpg');
     this.load.image('atika_and_saddam', 'assets/atika_and_saddam.jpg');
     this.load.image('hasina', 'assets/hasina.jpg');
     this.load.image('kawa_akder', 'assets/kawa_akder.jpg');
     this.load.image('manik', 'assets/manik.jpg');
     this.load.image('Nowfel', 'assets/Nowfel.jpg');
     this.load.image('polok', 'assets/polok.jpg');
-    this.load.image('sandal', 'assets/sandal.jpg');
     this.load.image('shakib', 'assets/shakib.jpg');
     this.load.image('sumon', 'assets/sumon.jpg');
     this.load.image('tarek', 'assets/tarek.jpg');
-    // Load other assets like backgrounds, etc.
-}
 
-let score = 0;
-let scoreText;
+    // Load the sound file
+    this.load.audio('gameSound', 'assets/sound.mp3');
+}
 
 function create() {
     // Set background color to white
     this.cameras.main.backgroundColor.setTo(255, 255, 255);
 
     // Initialize score
-    score = 0;
-    scoreText = this.add.text(16, 16, 'Score: 0', {
+    this.score = 0;
+    this.scoreText = this.add.text(16, 16, 'Score: 0', {
         fontSize: '32px',
         fill: '#000'
     });
@@ -69,15 +68,10 @@ function create() {
 
     // Input events
     this.input.on('pointerdown', throwSandal, this);
-}
 
-function hitTarget(sandal, target) {
-    target.disableBody(true, true);
-    score += 10;
-    scoreText.setText('Score: ' + score);
-    // Play sound or other feedback here
+    // Initialize sound
+    this.gameSound = this.sound.add('gameSound');
 }
-
 
 function update() {
     // Move targets or other game logic
@@ -96,5 +90,14 @@ function throwSandal(pointer) {
 
 function hitTarget(sandal, target) {
     target.disableBody(true, true);
-    // Increase score and update UI
+    this.score += 10;
+    this.scoreText.setText('Score: ' + this.score);
+    this.gameSound.play(); // Play the sound effect
+
+    // Reappear target after 2 seconds
+    this.time.delayedCall(2000, function() {
+        target.setAlpha(1); // Show target
+        target.setPosition(Phaser.Math.Between(0, 800), Phaser.Math.Between(0, 600)); // Random position
+        target.setActive(true).setVisible(true); // Make it active and visible
+    });
 }
