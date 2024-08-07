@@ -33,9 +33,19 @@ function preload() {
     // Load other assets like backgrounds, etc.
 }
 
+let score = 0;
+let scoreText;
+
 function create() {
     // Set background color to white
     this.cameras.main.backgroundColor.setTo(255, 255, 255);
+
+    // Initialize score
+    score = 0;
+    scoreText = this.add.text(16, 16, 'Score: 0', {
+        fontSize: '32px',
+        fill: '#000'
+    });
 
     // Create sandal
     this.sandal = this.physics.add.image(400, 500, 'sandal');
@@ -53,7 +63,6 @@ function create() {
     this.targets.create(700, 400, 'shakib');
     this.targets.create(800, 450, 'sumon');
     this.targets.create(900, 500, 'tarek');
-    // Add more targets as needed
 
     // Add collision detection
     this.physics.add.overlap(this.sandal, this.targets, hitTarget, null, this);
@@ -61,6 +70,14 @@ function create() {
     // Input events
     this.input.on('pointerdown', throwSandal, this);
 }
+
+function hitTarget(sandal, target) {
+    target.disableBody(true, true);
+    score += 10;
+    scoreText.setText('Score: ' + score);
+    // Play sound or other feedback here
+}
+
 
 function update() {
     // Move targets or other game logic
