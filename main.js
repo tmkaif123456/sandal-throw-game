@@ -23,7 +23,7 @@ function preload() {
     // Load images
     this.load.image('arafath', 'assets/arafath.jpg');
     this.load.image('atika_and_saddam', 'assets/atika_nd_saddam.jpg');
-    this.load.image('Hasina', 'assets/Hasina.jpg');
+    this.load.image('hasina', 'assets/hasina.jpg');
     this.load.image('kawa_akder', 'assets/kawa akder.jpg');
     this.load.image('manik', 'assets/manik.jpg');
     this.load.image('Nowfel', 'assets/Nowfel.jpg');
@@ -39,20 +39,26 @@ function preload() {
 function create() {
     // Create sandal
     this.sandal = this.physics.add.image(400, 500, 'sandal');
+    this.sandal.setCollideWorldBounds(true); // Ensure sandal stays within bounds
+    this.sandal.setBounce(0.2); // Optional: add bounce for realism
 
     // Create targets
-    this.targets = this.physics.add.group();
-    this.targets.create(100, 100, 'atika_and_saddam');
-    this.targets.create(200, 150, 'hasina');
-    this.targets.create(300, 200, 'kawa_akder');
-    this.targets.create(400, 250, 'manik');
-    this.targets.create(500, 300, 'Nowfel');
-    this.targets.create(600, 350, 'polok');
-    this.targets.create(700, 400, 'shakib');
-    this.targets.create(800, 450, 'sumon');
-    this.targets.create(900, 500, 'tarek');
+    this.targets = this.physics.add.group({
+        key: 'targets',
+        repeat: 9,
+        setXY: { x: 100, y: 100, stepX: 100, stepY: 50 }
+    });
 
-    // Add collision detection
+    // Add images to the targets group
+    this.targets.children.iterate(function (child, index) {
+        let images = ['atika_and_saddam', 'hasina', 'kawa_akder', 'manik', 'Nowfel', 'polok', 'shakib', 'sumon', 'tarek'];
+        child.setTexture(images[index]);
+        child.setCollideWorldBounds(true);
+        child.setBounce(1); // Add bounce
+        child.setInteractive(); // Make targets interactive
+    });
+
+    // Add overlap detection
     this.physics.add.overlap(this.sandal, this.targets, hitTarget, null, this);
 
     // Input events
@@ -77,19 +83,17 @@ function create() {
 }
 
 function update() {
-    this.targets.children.iterate(function (child) {
-        child.x += 1;
-        if (child.x > 800) {
-            child.x = 0;
-        }
-    });
+    // Optional: Add movement or behavior to the targets if needed
 }
 
 function throwSandal(pointer) {
+    // Move sandal to the pointer position
     this.physics.moveTo(this.sandal, pointer.x, pointer.y, 300);
 }
 
 function hitTarget(sandal, target) {
+    // Logic when target is hit
+    console.log('Hit target:', target.texture.key); // Debug log for hit detection
     target.disableBody(true, true);
     this.score += 10;
     this.scoreText.setText('Score: ' + this.score);
