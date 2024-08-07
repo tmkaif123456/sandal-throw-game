@@ -34,6 +34,9 @@ function preload() {
 }
 
 function create() {
+    // Set background color to white
+    this.cameras.main.backgroundColor.setTo(255, 255, 255);
+
     // Create sandal
     this.sandal = this.physics.add.image(400, 500, 'sandal');
 
