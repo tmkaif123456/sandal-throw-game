@@ -20,6 +20,7 @@ const config = {
 const game = new Phaser.Game(config);
 
 function preload() {
+    // Load images
     this.load.image('arafath', 'assets/arafath.jpg');
     this.load.image('atika_and_saddam', 'assets/atika_nd_saddam.jpg');
     this.load.image('hasina', 'assets/hasina.jpg');
@@ -31,12 +32,15 @@ function preload() {
     this.load.image('shakib', 'assets/shakib.jpg');
     this.load.image('sumon', 'assets/sumon.jpg');
     this.load.image('tarek', 'assets/tarek.jpg');
-    this.load.audio('hitSound', 'assets/sound.mp3'); // Load sound asset
+    // Load sound
+    this.load.audio('hitSound', 'assets/sound.mp3'); // Ensure this path is correct
 }
 
 function create() {
+    // Create sandal
     this.sandal = this.physics.add.image(400, 500, 'sandal');
 
+    // Create targets
     this.targets = this.physics.add.group();
     this.targets.create(100, 100, 'atika_and_saddam');
     this.targets.create(200, 150, 'hasina');
@@ -48,21 +52,28 @@ function create() {
     this.targets.create(800, 450, 'sumon');
     this.targets.create(900, 500, 'tarek');
 
+    // Add collision detection
     this.physics.add.overlap(this.sandal, this.targets, hitTarget, null, this);
 
+    // Input events
     this.input.on('pointerdown', throwSandal, this);
 
-    this.gameSound = this.sound.add('hitSound'); // Add sound effect
+    // Add sound
+    this.gameSound = this.sound.add('hitSound');
     this.score = 0;
     this.scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
 
     // Start audio context
     const startAudioButton = document.getElementById('startAudio');
-    startAudioButton.addEventListener('click', () => {
-        this.gameSound.context.resume().then(() => {
-            console.log('Audio context resumed');
+    if (startAudioButton) {
+        startAudioButton.addEventListener('click', () => {
+            this.gameSound.context.resume().then(() => {
+                console.log('Audio context resumed');
+            });
         });
-    });
+    } else {
+        console.error('Start button not found');
+    }
 }
 
 function update() {
