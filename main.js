@@ -40,25 +40,20 @@ function create() {
     // Create sandal
     this.sandal = this.physics.add.image(400, 500, 'sandal');
     this.sandal.setCollideWorldBounds(true); // Ensure sandal stays within bounds
-    this.sandal.setBounce(0.2); // Optional: add bounce for realism
 
     // Create targets
     this.targets = this.physics.add.group({
-        key: 'targets',
-        repeat: 9,
+        key: ['atika_and_saddam', 'hasina', 'kawa_akder', 'manik', 'Nowfel', 'polok', 'shakib', 'sumon', 'tarek'],
         setXY: { x: 100, y: 100, stepX: 100, stepY: 50 }
     });
 
-    // Add images to the targets group
-    this.targets.children.iterate(function (child, index) {
-        let images = ['atika_and_saddam', 'hasina', 'kawa_akder', 'manik', 'Nowfel', 'polok', 'shakib', 'sumon', 'tarek'];
-        child.setTexture(images[index]);
+    this.targets.children.iterate(function (child) {
         child.setCollideWorldBounds(true);
-        child.setBounce(1); // Add bounce
-        child.setInteractive(); // Make targets interactive
+        child.setBounce(1);
+        child.setInteractive(); // Ensure the target is interactive
     });
 
-    // Add overlap detection
+    // Add collision detection
     this.physics.add.overlap(this.sandal, this.targets, hitTarget, null, this);
 
     // Input events
@@ -83,17 +78,21 @@ function create() {
 }
 
 function update() {
-    // Optional: Add movement or behavior to the targets if needed
+    this.targets.children.iterate(function (child) {
+        child.x += 1;
+        if (child.x > 800) {
+            child.x = 0;
+        }
+    });
 }
 
 function throwSandal(pointer) {
-    // Move sandal to the pointer position
+    // Logic to throw sandal
     this.physics.moveTo(this.sandal, pointer.x, pointer.y, 300);
 }
 
 function hitTarget(sandal, target) {
     // Logic when target is hit
-    console.log('Hit target:', target.texture.key); // Debug log for hit detection
     target.disableBody(true, true);
     this.score += 10;
     this.scoreText.setText('Score: ' + this.score);
@@ -101,8 +100,6 @@ function hitTarget(sandal, target) {
 
     // Reappear target after 2 seconds
     this.time.delayedCall(2000, function() {
-        target.setAlpha(1);
-        target.setPosition(Phaser.Math.Between(0, 800), Phaser.Math.Between(0, 600));
-        target.setActive(true).setVisible(true);
-    });
+        target.enableBody(true, Phaser.Math.Between(0, 800), Phaser.Math.Between(0, 600), true, true);
+    }, [], this);
 }
