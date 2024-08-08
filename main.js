@@ -19,8 +19,14 @@ const config = {
 
 const game = new Phaser.Game(config);
 
+let score = 0;
+let scoreText;
+let level = 1;
+let targetSpeed = 100; // Initial speed of moving targets
+let sandal;
+let aim;
+
 function preload() {
-    // Load images
     this.load.image('arafath', 'assets/arafath.jpg');
     this.load.image('atika_and_saddam', 'assets/atika_nd_saddam.jpg');
     this.load.image('hasina', 'assets/hasina.jpg');
@@ -28,78 +34,106 @@ function preload() {
     this.load.image('manik', 'assets/manik.jpg');
     this.load.image('Nowfel', 'assets/Nowfel.jpg');
     this.load.image('polok', 'assets/polok.jpg');
-    this.load.image('sandal', 'assets/sandal.jpg');
     this.load.image('shakib', 'assets/shakib.jpg');
     this.load.image('sumon', 'assets/sumon.jpg');
     this.load.image('tarek', 'assets/tarek.jpg');
-    // Load sound
-    this.load.audio('hitSound', 'assets/sound.mp3'); // Ensure this path is correct
+    this.load.image('sandal', 'assets/sandal.jpg');
+    this.load.image('aim', 'assets/aim.png'); // Assuming you have an aim image
+    this.load.audio('hitSound', 'assets/sound.mp3');
 }
 
 function create() {
-    // Create sandal
-    this.sandal = this.physics.add.image(400, 500, 'sandal');
-    this.sandal.setCollideWorldBounds(true); // Ensure sandal stays within bounds
+    // Create aim in the center of the screen
+    aim = this.add.image(400, 300, 'aim');
 
-    // Create targets
+    // Create sandal, initially hidden
+    sandal = this.physics.add.image(aim.x, aim.y, 'sandal').setVisible(false);
+
+    // Create targets group
     this.targets = this.physics.add.group({
         key: ['atika_and_saddam', 'hasina', 'kawa_akder', 'manik', 'Nowfel', 'polok', 'shakib', 'sumon', 'tarek'],
-        setXY: { x: 100, y: 100, stepX: 100, stepY: 50 }
-    });
-
-    this.targets.children.iterate(function (child) {
-        child.setCollideWorldBounds(true);
-        child.setBounce(1);
-        child.setInteractive(); // Ensure the target is interactive
+        frameQuantity: 1,
+        setXY: { x: Phaser.Math.Between(100, 700), y: Phaser.Math.Between(50, 550) },
+        velocityX: Phaser.Math.Between(-targetSpeed, targetSpeed),
+        velocityY: Phaser.Math.Between(-targetSpeed, targetSpeed),
+        collideWorldBounds: true,
+        bounceX: 1,
+        bounceY: 1
     });
 
     // Add collision detection
-    this.physics.add.overlap(this.sandal, this.targets, hitTarget, null, this);
+    this.physics.add.overlap(sandal, this.targets, hitTarget, null, this);
 
-    // Input events
+    // Input event
     this.input.on('pointerdown', throwSandal, this);
 
-    // Add sound
-    this.gameSound = this.sound.add('hitSound');
-    this.score = 0;
-    this.scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
+    // Score and level text
+    scoreText = this.add.text(16, 16, `Score: ${score}`, { fontSize: '32px', fill: '#000' });
+    this.add.text(16, 50, `Level: ${level}`, { fontSize: '32px', fill: '#000' });
 
-    // Start audio context
-    const startAudioButton = document.getElementById('startAudio');
-    if (startAudioButton) {
-        startAudioButton.addEventListener('click', () => {
-            this.gameSound.context.resume().then(() => {
-                console.log('Audio context resumed');
-            });
-        });
-    } else {
-        console.error('Start button not found');
-    }
+    // Sound
+    this.hitSound = this.sound.add('hitSound');
 }
 
 function update() {
-    this.targets.children.iterate(function (child) {
-        child.x += 1;
-        if (child.x > 800) {
-            child.x = 0;
+    this.targets.children.iterate(function (target) {
+        // Move targets and check for bounds
+        if (target.x < 0 || target.x > 800 || target.y < 0 || target.y > 600) {
+            target.setVelocityX(Phaser.Math.Between(-targetSpeed, targetSpeed));
+            target.setVelocityY(Phaser.Math.Between(-targetSpeed, targetSpeed));
         }
     });
 }
 
 function throwSandal(pointer) {
-    // Logic to throw sandal
-    this.physics.moveTo(this.sandal, pointer.x, pointer.y, 300);
+    // Hide the sandal at first
+    sandal.setVisible(false);
+
+    // If an image is within the aim when clicked
+    let hit = false;
+    this.targets.children.iterate(function (target) {
+        if (Phaser.Geom.Intersects.RectangleToRectangle(aim.getBounds(), target.getBounds())) {
+            hit = true;
+            hitTarget(sandal, target);
+        }
+    });
+
+    // If no hit, the sandal just appears and fades
+    if (!hit) {
+        sandal.setPosition(pointer.x, pointer.y).setVisible(true);
+        this.time.delayedCall(500, function () {
+            sandal.setVisible(false);
+        }, [], this);
+    }
 }
 
 function hitTarget(sandal, target) {
-    // Logic when target is hit
-    target.disableBody(true, true);
-    this.score += 10;
-    this.scoreText.setText('Score: ' + this.score);
-    this.gameSound.play(); // Play sound effect
+    // Play hit sound
+    this.hitSound.play();
 
-    // Reappear target after 2 seconds
-    this.time.delayedCall(2000, function() {
-        target.enableBody(true, Phaser.Math.Between(0, 800), Phaser.Math.Between(0, 600), true, true);
-    }, [], this);
+    // Disable target
+    target.disableBody(true, true);
+
+    // Update score
+    score += 10;
+    scoreText.setText(`Score: ${score}`);
+
+    // Check if all targets are hit to level up
+    if (this.targets.countActive(true) === 0) {
+        levelUp();
+    }
 }
+
+function levelUp() {
+    level += 1;
+    targetSpeed += 50; // Increase target speed
+
+    // Reactivate targets and reset positions
+    this.targets.children.iterate(function (target) {
+        target.enableBody(true, Phaser.Math.Between(100, 700), Phaser.Math.Between(50, 550), true, true);
+        target.setVelocity(Phaser.Math.Between(-targetSpeed, targetSpeed), Phaser.Math.Between(-targetSpeed, targetSpeed));
+    });
+
+    this.add.text(16, 50, `Level: ${level}`, { fontSize: '32px', fill: '#000' });
+}
+
