@@ -2,7 +2,7 @@ const config = {
     type: Phaser.AUTO,
     width: 800,
     height: 600,
-    backgroundColor: '#ffffff', // White background
+    backgroundColor: '#ffffff',
     physics: {
         default: 'arcade',
         arcade: {
@@ -22,118 +22,124 @@ const game = new Phaser.Game(config);
 let score = 0;
 let scoreText;
 let level = 1;
-let targetSpeed = 100; // Initial speed of moving targets
+let targetSpeed = 100;
 let sandal;
 let aim;
+let targets;
+let hitSound;
 
 function preload() {
-    this.load.image('arafath', 'assets/arafath.jpg');
-    this.load.image('atika_and_saddam', 'assets/atika_nd_saddam.jpg');
-    this.load.image('hasina', 'assets/hasina.jpg');
-    this.load.image('kawa_akder', 'assets/kawa akder.jpg');
-    this.load.image('manik', 'assets/manik.jpg');
-    this.load.image('Nowfel', 'assets/Nowfel.jpg');
-    this.load.image('polok', 'assets/polok.jpg');
-    this.load.image('shakib', 'assets/shakib.jpg');
-    this.load.image('sumon', 'assets/sumon.jpg');
-    this.load.image('tarek', 'assets/tarek.jpg');
     this.load.image('sandal', 'assets/sandal.jpg');
-    this.load.image('aim', 'assets/aim.png'); // Assuming you have an aim image
+    this.load.image('aim', 'assets/aim.png');
     this.load.audio('hitSound', 'assets/sound.mp3');
+    
+    // Load target images
+    const targetNames = ['arafath', 'atika_and_saddam', 'hasina', 'kawa_akder', 'manik', 'Nowfel', 'polok', 'shakib', 'sumon', 'tarek'];
+    targetNames.forEach(name => {
+        this.load.image(name, `assets/${name}.jpg`);
+    });
 }
 
 function create() {
-    // Create aim in the center of the screen
-    aim = this.add.image(400, 300, 'aim');
-
+    // Create fixed aim in the center
+    aim = this.add.image(400, 300, 'aim').setDepth(1); // Ensure aim is on top layer
+    
     // Create sandal, initially hidden
-    sandal = this.physics.add.image(aim.x, aim.y, 'sandal').setVisible(false);
+    sandal = this.physics.add.image(aim.x, aim.y, 'sandal').setVisible(false).setDepth(2);
 
-    // Create targets group
-    this.targets = this.physics.add.group({
-        key: ['atika_and_saddam', 'hasina', 'kawa_akder', 'manik', 'Nowfel', 'polok', 'shakib', 'sumon', 'tarek'],
-        frameQuantity: 1,
-        setXY: { x: Phaser.Math.Between(100, 700), y: Phaser.Math.Between(50, 550) },
-        velocityX: Phaser.Math.Between(-targetSpeed, targetSpeed),
-        velocityY: Phaser.Math.Between(-targetSpeed, targetSpeed),
-        collideWorldBounds: true,
-        bounceX: 1,
-        bounceY: 1
-    });
+    // Create a group of targets
+    targets = this.physics.add.group();
+    createTargets();
 
-    // Add collision detection
-    this.physics.add.overlap(sandal, this.targets, hitTarget, null, this);
+    // Score text
+    scoreText = this.add.text(16, 16, `Score: ${score}`, { fontSize: '32px', fill: '#000' });
+
+    // Add sound
+    hitSound = this.sound.add('hitSound');
 
     // Input event
     this.input.on('pointerdown', throwSandal, this);
+}
 
-    // Score and level text
-    scoreText = this.add.text(16, 16, `Score: ${score}`, { fontSize: '32px', fill: '#000' });
-    this.add.text(16, 50, `Level: ${level}`, { fontSize: '32px', fill: '#000' });
-
-    // Sound
-    this.hitSound = this.sound.add('hitSound');
+function createTargets() {
+    const targetNames = ['arafath', 'atika_and_saddam', 'hasina', 'kawa_akder', 'manik', 'Nowfel', 'polok', 'shakib', 'sumon', 'tarek'];
+    targetNames.forEach(name => {
+        let target = targets.create(Phaser.Math.Between(0, 800), Phaser.Math.Between(0, 600), name);
+        target.setVelocity(Phaser.Math.Between(-targetSpeed, targetSpeed), Phaser.Math.Between(-targetSpeed, targetSpeed));
+        target.setCollideWorldBounds(true);
+        target.setBounce(1);
+    });
 }
 
 function update() {
-    this.targets.children.iterate(function (target) {
-        // Move targets and check for bounds
+    // Continuously move targets around the screen
+    targets.children.iterate(function (target) {
         if (target.x < 0 || target.x > 800 || target.y < 0 || target.y > 600) {
-            target.setVelocityX(Phaser.Math.Between(-targetSpeed, targetSpeed));
-            target.setVelocityY(Phaser.Math.Between(-targetSpeed, targetSpeed));
+            target.setVelocity(Phaser.Math.Between(-targetSpeed, targetSpeed), Phaser.Math.Between(-targetSpeed, targetSpeed));
         }
     });
 }
 
 function throwSandal(pointer) {
-    // Hide the sandal at first
-    sandal.setVisible(false);
-
-    // If an image is within the aim when clicked
+    // Check if a target is within the aim when clicked
     let hit = false;
-    this.targets.children.iterate(function (target) {
+    targets.children.iterate((target) => {
         if (Phaser.Geom.Intersects.RectangleToRectangle(aim.getBounds(), target.getBounds())) {
             hit = true;
-            hitTarget(sandal, target);
+            animateSandal(target);
         }
     });
 
-    // If no hit, the sandal just appears and fades
+    // If no target is hit, just show the sandal animation
     if (!hit) {
-        sandal.setPosition(pointer.x, pointer.y).setVisible(true);
-        this.time.delayedCall(500, function () {
-            sandal.setVisible(false);
-        }, [], this);
+        animateSandal(null);
     }
 }
 
-function hitTarget(sandal, target) {
-    // Play hit sound
-    this.hitSound.play();
+function animateSandal(target) {
+    sandal.setVisible(true);
+    sandal.setPosition(aim.x, aim.y);
 
-    // Disable target
+    // If there's a target, animate the sandal towards it
+    if (target) {
+        this.tweens.add({
+            targets: sandal,
+            x: target.x,
+            y: target.y,
+            duration: 300,
+            onComplete: () => {
+                sandal.setVisible(false);
+                hitTarget(target);
+            }
+        });
+    } else {
+        // If no target is hit, just fade out the sandal
+        this.time.delayedCall(500, () => {
+            sandal.setVisible(false);
+        });
+    }
+}
+
+function hitTarget(target) {
     target.disableBody(true, true);
-
-    // Update score
     score += 10;
     scoreText.setText(`Score: ${score}`);
+    hitSound.play();
 
     // Check if all targets are hit to level up
-    if (this.targets.countActive(true) === 0) {
+    if (targets.countActive(true) === 0) {
         levelUp();
     }
 }
 
 function levelUp() {
     level += 1;
-    targetSpeed += 50; // Increase target speed
+    targetSpeed += 50;
 
-    // Reactivate targets and reset positions
-    this.targets.children.iterate(function (target) {
-        target.enableBody(true, Phaser.Math.Between(100, 700), Phaser.Math.Between(50, 550), true, true);
-        target.setVelocity(Phaser.Math.Between(-targetSpeed, targetSpeed), Phaser.Math.Between(-targetSpeed, targetSpeed));
-    });
+    // Recreate targets with increased speed
+    createTargets();
 
+    // Add level text
     this.add.text(16, 50, `Level: ${level}`, { fontSize: '32px', fill: '#000' });
 }
 
